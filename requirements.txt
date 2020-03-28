@@ -1,0 +1,3 @@
+sanic
+python-socketio
+sanic-jinja2

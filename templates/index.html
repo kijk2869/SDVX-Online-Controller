@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SDVX Controller</title>
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+        <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
+        <script type="text/javascript" src="/static/socket.io.slim.js"></script>
+        <script type="text/javascript" src="/static/imageMapResizer.min.js"></script>
+    
+        <style>
+            body{
+                background-color: black;
+                text-align:center;
+            }
+
+            a.fullsize{
+                position:absolute;
+                right:0;
+                bottom:0;
+                z-index:1;
+                width:30px;
+            }
+
+            img.fullsize{
+                margin-right: 5px;
+                margin-bottom: 5px;
+                -webkit-filter: invert(100%);
+                filter: invert(100%);
+                width: 100%;
+                height: auto;
+            }
+
+            .container{
+                top: 0;
+                position: absolute;
+                width: 100%;
+                height: 100%;
+            }
+
+            .sdvx{
+                max-height: 100%;
+                width: auto;
+            }
+
+            .latency{
+                position: fixed;
+                top: 0;
+                right: 0;
+                pointer-events: none;
+                color: gray;
+                z-index:1;
+            }
+
+            .no-drag {
+                -ms-user-select: none; 
+                -moz-user-select: -moz-none; 
+                -webkit-user-select: none; 
+                -khtml-user-select: none; 
+                user-select:none;
+                pointer-events: none;
+            }
+        </style>
+    </head>
+    <body onselectstart="return false" ondragstart="return false" oncontextmenu="return false">
+        <div id="latency" class="latency no-drag"></div>
+
+        <a class="fullsize">
+            <image class="fullsize" src="/static/fullsize.png"></image>
+        </a>
+        
+        <div class="container">
+            <img src="/static/sdvx.png" alt="Controller" class="sdvx" usemap="#Control">
+            <map name="Control">
+                <area target="" class="BT-A" title="BT-A" coords="352,563,582,333" shape="rect">
+                <area target="" class="BT-B" title="BT-B" coords="636,333,866,559" shape="rect">
+                <area target="" class="BT-C" title="BT-C" coords="921,331,1151,559" shape="rect">
+                <area target="" class="BT-D" title="BT-D" coords="1206,333,1436,561" shape="rect">
+                <area target="" class="FX-L" title="FX-L" coords="400,627,809,827" shape="rect">
+                <area target="" class="FX-R" title="FX-R" coords="978,627,1391,829" shape="rect">
+                <area target="" class="Start" title="Start" coords="832,43,953,162" shape="rect">
+                <area target="" class="VOL-L-L" title="VOL-L-L" coords="216,76,217,320,161,306,117,266,98,222,96,175,118,123,161,85" shape="poly">
+                <area target="" class="VOL-L-R" title="VOL-L-R" coords="214,74,219,318,279,303,310,274,331,247,340,195,328,147,303,107,265,85" shape="poly">
+                <area target="" class="VOL-R-L" title="VOL-R-L" coords="1568,76,1571,321,1526,310,1492,290,1466,263,1451,213,1450,167,1472,123,1508,90,1538,76" shape="poly">
+                <area target="" class="VOL-R-R" title="VOL-R-R" coords="1568,74,1571,318,1619,310,1671,269,1702,205,1682,147,1639,95,1606,82" shape="poly">
+            </map>
+        </div>
+
+        <script>
+            navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+            $('#latency').click(function(){return false})
+            $('map').imageMapResize();
+            $('a.fullsize').click(function(){
+                if (document.fullscreenElement) {
+                    closeFullScreenMode();
+                } else {
+                    openFullScreenMode();
+                }
+            })
+
+            $('area').bind("touchstart", function(event) {
+                //event.preventDefault();
+                emit('down', {key:$(this).attr('class')});
+                navigator.vibrate(100);
+            })
+
+            $('area').bind("touchend", function(event) {
+                //event.preventDefault();
+                emit('up', {key:$(this).attr('class')});
+            })
+
+            var socket = io.connect();
+            
+            socket.on('pong', function(Data){
+                if(Data.latency === undefined){return false}
+                $('#latency').text(`${Data.latency}ms`)
+            })
+
+            function emit(event, data) {
+                timestampSecond = + new Date() / 1000;
+                data.timestampPing = timestampSecond
+                socket.emit(event, data)
+            }
+
+            var docV = document.documentElement;
+            function openFullScreenMode() {
+                if (docV.requestFullscreen)
+                    docV.requestFullscreen();
+                else if (docV.webkitRequestFullscreen)
+                    docV.webkitRequestFullscreen();
+                else if (docV.mozRequestFullScreen)
+                    docV.mozRequestFullScreen();
+                else if (docV.msRequestFullscreen)
+                    docV.msRequestFullscreen();
+            }
+            function closeFullScreenMode() {
+                if (document.exitFullscreen)
+                    document.exitFullscreen();
+                else if (document.webkitExitFullscreen)
+                    document.webkitExitFullscreen();
+                else if (document.mozCancelFullScreen)
+                    document.mozCancelFullScreen();
+                else if (document.msExitFullscreen)
+                    document.msExitFullscreen();
+            }
+        </script>
+    </body>
+</html>
