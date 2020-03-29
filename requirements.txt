@@ -1,3 +1,4 @@
 sanic
 python-socketio
 sanic-jinja2
+pyautogui
